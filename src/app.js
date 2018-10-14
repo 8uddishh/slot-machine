@@ -6,22 +6,24 @@ import num7 from './../assets/7.png';
 import bar from './../assets/BAR.png';
 import cherry from './../assets/Cherry.png';
 
-import { Application, Sprite, Container } from 'pixi.js';
+import { Application, Sprite, Container, Graphics } from 'pixi.js';
 
-import { from, of, interval } from 'rxjs';
+import { from, of, interval, BehaviorSubject } from 'rxjs';
 import {
   map,
   tap,
   switchMap,
   mergeMap,
   combineAll,
-  take
+  take,
+  filter
 } from 'rxjs/operators';
 
-import shuffle from 'shuffle-array';
-
-// 141 161
+let startScore = 1000;
+const scoreReducer = new BehaviorSubject(0);
+const scoreIncrementer = new BehaviorSubject(0);
 const app = new Application(750, 550);
+app.renderer.backgroundColor = 0xf5f5f5;
 const { view } = app;
 
 const playContainer = new Container();
@@ -44,6 +46,33 @@ app.stage.addChild(controlContainer);
 
 document.getElementById('playground').appendChild(view);
 
+var top = new Graphics();
+top.beginFill(0, 1);
+top.drawRect(490, 10, 250, 530);
+playContainer.addChild(top);
+
+var style = new PIXI.TextStyle({
+  fontFamily: 'Arial',
+  fontSize: 36,
+  fontStyle: 'italic',
+  fontWeight: 'bold',
+  fill: ['#ffffff', '#00ff99'], // gradient
+  stroke: '#4a1850',
+  strokeThickness: 5,
+  dropShadow: true,
+  dropShadowColor: '#000000',
+  dropShadowBlur: 4,
+  dropShadowAngle: Math.PI / 6,
+  dropShadowDistance: 6,
+  wordWrap: true,
+  wordWrapWidth: 440
+});
+
+var scoreBoard = new PIXI.Text(startScore, style);
+scoreBoard.x = 575;
+scoreBoard.y = 30;
+top.addChild(scoreBoard);
+
 const button = Sprite.fromImage(buttonSp);
 button.interactive = true;
 button.buttonMode = true;
@@ -62,16 +91,25 @@ from([0, 1, 2])
       reelContainer.width = 161;
     }),
     switchMap(({ reelContainer, idx }) =>
-      from([bar3x, bar, bar2x, num7, cherry,bar3x, bar, bar2x, num7, cherry]).pipe(
+      from([
+        bar3x,
+        bar,
+        bar2x,
+        num7,
+        cherry,
+        bar3x,
+        bar,
+        bar2x,
+        num7,
+        cherry
+      ]).pipe(
         map(img => Sprite.fromImage(img)),
         tap(img => {
           img.x = 10;
           img.y = runner * 200 + 10;
-          img.name = slotImages[(runner%5)];
+          img.name = slotImages[runner % 5];
           reelContainer.addChild(img);
           images[idx].push(img);
-          if(idx == 0)
-            console.log(img.name)
           runner++;
         }),
         map(img => of(img)),
@@ -98,6 +136,7 @@ let spinning = false;
 
 button.on('pointerdown', _ => {
   if (!spinning) {
+    scoreReducer.next(1);
     from(reels)
       .pipe(
         map(reel => ({ reel, btw: betweens[++spinCounter] })),
@@ -105,7 +144,6 @@ button.on('pointerdown', _ => {
           reel,
           intvl: randomBetween(btw.min, btw.max)
         })),
-        tap(({ intvl }) => console.log(`interval ${intvl}`)),
         mergeMap(({ reel, intvl }) =>
           interval(1).pipe(
             take(Math.floor(intvl / 5)),
@@ -116,14 +154,19 @@ button.on('pointerdown', _ => {
                 reel.y -= 10;
               }
 
-              if (Math.floor(intvl / 5) - spin == 1 ) {
-                const lessers = images[0].filter(img => img.y <= -1 * reel.y)
-                const greater = images[0].find(img => img.y >= -1 * reel.y)
+              if (Math.floor(intvl / 5) - spin == 1) {
+                const y = -1 * reel.y;
+                const lessers = images[0].filter(img => img.y <= y);
+                const greater = images[0].find(img => img.y >= y);
                 if (lessers && lessers.length > 0) {
-                    const less = [...lessers].pop()
-                    reel.y = -1 * (less.y - 10)
-                }
-                else {
+                  const less = [...lessers].pop();
+                  if (y - less.y < greater.y - y) {
+                    reel.y = -1 * (less.y - 10);
+                  }
+                  else {
+                    reel.y = -1 * (greater.y - 10);
+                  }
+                } else {
                   reel.y = 0;
                 }
               }
@@ -135,34 +178,276 @@ button.on('pointerdown', _ => {
         _ => {},
         err => console.log('Error', err),
         () => {
-          spinning = false;
-          spinCounter = -1;
-          // adjustReels();
+          calculate();
         }
       );
   }
 });
 
-const adjustReels = () => {
+scoreReducer
+  .pipe(switchMap(decr => interval(100).pipe(take(decr))))
+  .subscribe(_ => {
+    startScore--;
+    scoreBoard.text = startScore;
+  });
+
+scoreIncrementer
+  .pipe(switchMap(incr => interval(1).pipe(take(incr))))
+  .subscribe(_ => {
+    startScore++;
+    scoreBoard.text = startScore;
+  });
+
+const calculate = () => {
   let idx = 0;
   from(reels)
     .pipe(
-      map(reel => ({
-        reel,
-        lesser: images[idx].filter(img => img.y <= -1 * reel.y),
-        greater: images[idx].find(img => img.y >= -1 * reel.y)
-      })),
-      tap(({reel, lesser, greater}) => {
-          if (lesser && lesser.length > 0) {
-              const less = [...lesser].pop()
-              reel.y = -1 * (less.y - 10)
-              console.log(`Reel y: ${reel.y} Lesser y: ${less.y} Greater y: ${greater.y}`)
-          }
-          else {
-            reel.y = 0;
-            console.log(`Reel y: ${reel.y} Lesser y: 0 Greater y: ${greater.y}`)
-          }
-      })
+      map(reel => ({ topY: -1 * reel.y + 10, idx })),
+      tap(_ => idx++),
+      switchMap(({ topY, idx }) =>
+        from(images[idx]).pipe(
+          filter(img => img.y >= topY),
+          take(3),
+          map(img => of(img.name)),
+          combineAll()
+        )
+      ),
+      map(img => of(img)),
+      combineAll()
     )
-    .subscribe(_ => {});
+    .subscribe(scores => {
+      spinning = false;
+      spinCounter = -1;
+      
+      // 3 cherry on bottom
+      if (
+        scores[0][2] == 'cherry' &&
+        scores[1][2] == 'cherry' &&
+        scores[2][2] == 'cherry'
+      ) {
+        console.log('3 cherry on bottom - 4000')
+        scoreIncrementer.next(4000);
+        return;
+      }
+
+      // 3 cherry on top
+      if (
+        scores[0][0] == 'cherry' &&
+        scores[1][0] == 'cherry' &&
+        scores[2][0] == 'cherry'
+      ) {
+        console.log('3 cherry on top - 2000')
+        scoreIncrementer.next(2000);
+        return;
+      }
+
+      // 3 cherry on middle
+      if (
+        scores[0][1] == 'cherry' &&
+        scores[1][1] == 'cherry' &&
+        scores[2][1] == 'cherry'
+      ) {
+        console.log('3 cherry on middle - 1000')
+        scoreIncrementer.next(1000);
+        return;
+      }
+
+      // 3 7 in top
+      if (
+        scores[0][0] == 'num7' &&
+        scores[1][0] == 'num7' &&
+        scores[2][0] == 'num7'
+      ) {
+        console.log('3 7 on top - 150')
+        scoreIncrementer.next(150);
+        return;
+      }
+
+      // 3 7 in middle
+      if (
+        scores[0][1] == 'num7' &&
+        scores[1][1] == 'num7' &&
+        scores[2][1] == 'num7'
+      ) {
+        console.log('3 7 on middle - 150')
+        scoreIncrementer.next(150);
+        return;
+      }
+
+      // 3 7 in bottom
+      if (
+        scores[0][2] == 'num7' &&
+        scores[1][2] == 'num7' &&
+        scores[2][2] == 'num7'
+      ) {
+        console.log('3 7 on bottom - 150')
+        scoreIncrementer.next(150);
+        return;
+      }
+
+      // 3 num 7 and cherry on top
+      if (
+        (scores[0][0] == 'num7' || scores[0][0] == 'cherry') &&
+        (scores[1][0] == 'num7' || scores[1][0] == 'cherry') &&
+        (scores[2][0] == 'num7' || scores[2][0] == 'cherry')
+      ) {
+        console.log('3 7 or cherry on top - 75')
+        scoreIncrementer.next(75);
+        return;
+      }
+
+      // 3 num 7 and cherry on middle
+      if (
+        (scores[0][1] == 'num7' || scores[0][1] == 'cherry') &&
+        (scores[1][1] == 'num7' || scores[1][1] == 'cherry') &&
+        (scores[2][1] == 'num7' || scores[2][1] == 'cherry')
+      ) {
+        console.log('3 7 or cherry on middle - 75')
+        scoreIncrementer.next(75);
+        return;
+      }
+
+      // 3 num 7 and cherry on bottom
+      if (
+        (scores[0][2] == 'num7' || scores[0][2] == 'cherry') &&
+        (scores[1][2] == 'num7' || scores[1][2] == 'cherry') &&
+        (scores[2][2] == 'num7' || scores[2][2] == 'cherry')
+      ) {
+        console.log('3 7 or cherry on bottom - 75')
+        scoreIncrementer.next(75);
+        return;
+      }
+
+      // 3 bar3x on top
+      if (
+        scores[0][0] == 'bar3x' &&
+        scores[1][0] == 'bar3x' &&
+        scores[2][0] == 'bar3x'
+      ) {
+        console.log('3 bar3x on top - 50')
+        scoreIncrementer.next(50);
+        return;
+      }
+
+      // 3 bar3x on middle
+      if (
+        scores[0][1] == 'bar3x' &&
+        scores[1][1] == 'bar3x' &&
+        scores[2][1] == 'bar3x'
+      ) {
+        console.log('3 bar3x on middle - 50')
+        scoreIncrementer.next(50);
+        return;
+      }
+
+      // 3 bar3x on bottom
+      if (
+        scores[0][2] == 'bar3x' &&
+        scores[1][2] == 'bar3x' &&
+        scores[2][2] == 'bar3x'
+      ) {
+        console.log('3 bar3x on bottom - 50')
+        scoreIncrementer.next(50);
+        return;
+      }
+
+      // 3 bar2x on top
+      if (
+        scores[0][0] == 'bar2x' &&
+        scores[1][0] == 'bar2x' &&
+        scores[2][0] == 'bar2x'
+      ) {
+        console.log('3 bar2x on top - 20')
+        scoreIncrementer.next(20);
+        return;
+      }
+
+      // 3 bar2x on middle
+      if (
+        scores[0][1] == 'bar2x' &&
+        scores[1][1] == 'bar2x' &&
+        scores[2][1] == 'bar2x'
+      ) {
+        console.log('3 bar2x on middle - 20')
+        scoreIncrementer.next(20);
+        return;
+      }
+
+      // 3 bar2x on bottom
+      if (
+        scores[0][2] == 'bar2x' &&
+        scores[1][2] == 'bar2x' &&
+        scores[2][2] == 'bar2x'
+      ) {
+        console.log('3 bar2x on bottom - 20')
+        scoreIncrementer.next(20);
+        return;
+      }
+
+      // 3 bar on top
+      if (
+        scores[0][0] == 'bar' &&
+        scores[1][0] == 'bar' &&
+        scores[2][0] == 'bar'
+      ) {
+        console.log('3 bar on top - 10')
+        scoreIncrementer.next(10);
+        return;
+      }
+
+      // 3 bar on middle
+      if (
+        scores[0][1] == 'bar' &&
+        scores[1][1] == 'bar' &&
+        scores[2][1] == 'bar'
+      ) {
+        console.log('3 bar on middle - 10')
+        scoreIncrementer.next(10);
+        return;
+      }
+
+      // 3 bar on bottom
+      if (
+        scores[0][2] == 'bar' &&
+        scores[1][2] == 'bar' &&
+        scores[2][2] == 'bar'
+      ) {
+        console.log('3 bar on middle - 10')
+        scoreIncrementer.next(10);
+        return;
+      }
+
+      // 3 bar on top
+      if (
+        scores[0][0].startsWith('bar') &&
+        scores[1][0].startsWith('bar') &&
+        scores[2][0].startsWith('bar')
+      ) {
+        console.log('3 any bar on top - 5')
+        scoreIncrementer.next(5);
+        return;
+      }
+
+      // 3 bar on middle
+      if (
+        scores[0][1].startsWith('bar') &&
+        scores[1][1].startsWith('bar') &&
+        scores[2][1].startsWith('bar')
+      ) {
+        console.log('3 any bar on middle - 5')
+        scoreIncrementer.next(5);
+        return;
+      }
+
+      // 3 bar on bottom
+      if (
+        scores[0][2].startsWith('bar') &&
+        scores[1][2].startsWith('bar') &&
+        scores[2][2].startsWith('bar')
+      ) {
+        console.log('3 any bar on bottom - 5')
+        scoreIncrementer.next(5);
+        return;
+      }
+    });
 };
