@@ -20,7 +20,8 @@ import {
 
 import shuffle from 'shuffle-array';
 
-const app = new Application(1200, 550);
+// 141 161
+const app = new Application(750, 550);
 const { view } = app;
 
 const playContainer = new Container();
@@ -35,10 +36,10 @@ playContainer.width = 900;
 app.stage.addChild(playContainer);
 
 const controlContainer = new Container();
-controlContainer.x = 901;
+controlContainer.x = 485;
 controlContainer.y = 0;
 controlContainer.height = 500;
-controlContainer.width = 900;
+controlContainer.width = 217;
 app.stage.addChild(controlContainer);
 
 document.getElementById('playground').appendChild(view);
@@ -55,15 +56,16 @@ from([0, 1, 2])
   .pipe(
     map(idx => ({ reelContainer: new Container(), idx })),
     tap(({ reelContainer, idx }) => {
-      reelContainer.x = idx * 300;
+      reelContainer.x = idx * 161;
       reelContainer.y = 0;
       reelContainer.height = 500;
-      reelContainer.width = 900;
+      reelContainer.width = 161;
     }),
     switchMap(({ reelContainer, idx }) =>
       from([bar3x, bar, bar2x, num7, cherry,bar3x, bar, bar2x, num7, cherry]).pipe(
         map(img => Sprite.fromImage(img)),
         tap(img => {
+          img.x = 10;
           img.y = runner * 200 + 10;
           img.name = slotImages[(runner%5)];
           reelContainer.addChild(img);
