@@ -9,7 +9,7 @@
     "start": "webpack-dev-server"
   },
   "keywords": [],
-  "author": "",
+  "author": "Senthilkumar Baliah",
   "license": "ISC",
   "devDependencies": {
     "clean-webpack-plugin": "^0.1.19",
@@ -25,7 +25,6 @@
   },
   "dependencies": {
     "pixi.js": "^4.8.2",
-    "rxjs": "^6.3.3",
-    "shuffle-array": "^1.0.1"
+    "rxjs": "^6.3.3"
   }
 }

@@ -9,10 +9,10 @@ A Simple slot machine algorithm using Pixi.js and Rxjs
 npm install
 
 # serve with hot reload at localhost:8080
-npm run dev
+npm run start
 
 # build for production with minification
-npm run start
+npm run build
 ```
 
 ## Credits

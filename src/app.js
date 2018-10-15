@@ -69,7 +69,7 @@ playContainer.addChild(top);
 
 var style = new TextStyle({
   fontFamily: 'Arial',
-  fontSize: 36,
+  fontSize: 48,
   fontStyle: 'italic',
   fontWeight: 'bold',
   fill: ['#ffffff', '#00ff99'], // gradient
@@ -143,15 +143,16 @@ from([0, 1, 2])
 const randomBetween = (min, max) =>
   Math.floor(Math.random() * (max - min + 1)) + min;
 const betweens = [
-  { min: 2000, max: 2800 },
-  { min: 4000, max: 4800 },
-  { min: 5500, max: 6500 }
+  { min: 1600, max: 2800 },
+  { min: 3200, max: 4800 },
+  { min: 5000, max: 6500 }
 ];
 let spinCounter = -1;
 let spinning = false;
 
 button.on('pointerdown', _ => {
   if (!spinning) {
+    spinning = true;
     winningSlot.y = -121;
     scoreReducer.next(1);
     from(reels)
