@@ -142,3 +142,5 @@ export const winningCombinations = [
     ],
   },
 ];
+
+export const HasFlag = (combined, flag) => (combined | flag) === combined;

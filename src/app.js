@@ -15,7 +15,6 @@ import {
   from,
   of,
   interval,
-  BehaviorSubject,
 } from 'rxjs';
 
 import {
@@ -26,23 +25,14 @@ import {
   combineAll,
   take,
   filter,
-  concatMap,
 } from 'rxjs/operators';
 
 import '../assets/style.css';
 import buttonSp from '../assets/spin-button.png';
-import {
-  winningCombinations,
-} from './combinations';
-
 import SlotManager from './slot-manager';
 
-const HasFlag = (combined, flag) => (combined | flag) === combined;
 const sltMgr = new SlotManager();
 let startScore = 1000;
-const scoreReducer = new BehaviorSubject(0);
-const scoreIncrementer = new BehaviorSubject(0);
-const winSlotDisplayer = new BehaviorSubject('');
 const app = new Application(750, 550);
 app.renderer.backgroundColor = 0xf5f5f5;
 const { view } = app;
@@ -50,7 +40,6 @@ const { view } = app;
 const playContainer = new Container();
 const reels = [];
 const images = [[], [], []];
-let spinCounter = -1;
 
 playContainer.x = 0;
 playContainer.y = 0;
@@ -127,7 +116,7 @@ sltMgr.getSlotDimensions()
       reelContainer.width = width;
     }),
     map(({ reelContainer, idx }) => ({ reelContainer, idx })),
-    switchMap(({ reelContainer, idx }) => sltMgr.getImagePositions().pipe(
+    switchMap(({ reelContainer, idx }) => sltMgr.getImagePositions(idx).pipe(
       map(({
         img,
         x,
@@ -176,71 +165,13 @@ const calculate = () => {
       tap(() => {
         index += 1;
       }),
-      switchMap(({ topY, idx }) => from(images[idx]).pipe(
-        filter(img => img.y >= topY),
-        take(3),
-        map(img => of({ name: img.name, slotId: img.slotId })),
-        combineAll(),
-      )),
+      switchMap(({ topY, idx }) => sltMgr.getQualifyingReelImages(idx, topY)),
       map(img => of(img)),
       combineAll(),
     )
     .subscribe((scores) => {
       spinning = false;
-      spinCounter = -1;
-      const rowTopWinnings = winningCombinations
-        .find(x => x.slotPosition === 0)
-        .winnings.filter(x => HasFlag(
-          x.combination,
-          scores[0][0].slotId | scores[1][0].slotId | scores[2][0].slotId,
-        ));
-
-      const rowMiddleWinnings = winningCombinations
-        .find(x => x.slotPosition === 1)
-        .winnings.filter(x => HasFlag(
-          x.combination,
-          scores[0][1].slotId | scores[1][1].slotId | scores[2][1].slotId,
-        ));
-
-      const rowBottomWinnings = winningCombinations
-        .find(x => x.slotPosition === 2)
-        .winnings.filter(x => HasFlag(
-          x.combination,
-          scores[0][2].slotId | scores[1][2].slotId | scores[2][2].slotId,
-        ));
-
-      const rowTopMax = Math.max(...rowTopWinnings.map(w => w.score), 0);
-      const rowMiddleMax = Math.max(...rowMiddleWinnings.map(w => w.score), 0);
-      const rowBottomMax = Math.max(...rowBottomWinnings.map(w => w.score), 0);
-
-      if (
-        rowTopMax > 0
-        && rowTopMax >= rowMiddleMax
-        && rowTopMax >= rowBottomMax
-      ) {
-        scoreIncrementer.next(rowTopMax);
-        winSlotDisplayer.next('top');
-        return;
-      }
-
-      if (
-        rowMiddleMax > 0
-        && rowMiddleMax > rowTopMax
-        && rowMiddleMax >= rowBottomMax
-      ) {
-        scoreIncrementer.next(rowMiddleMax);
-        winSlotDisplayer.next('middle');
-        return;
-      }
-
-      if (
-        rowBottomMax > 0
-        && rowBottomMax > rowTopMax
-        && rowBottomMax > rowMiddleMax
-      ) {
-        scoreIncrementer.next(rowBottomMax);
-        winSlotDisplayer.next('bottom');
-      }
+      sltMgr.calculate(scores);
     });
 };
 
@@ -248,19 +179,11 @@ button.on('pointerdown', () => {
   if (!spinning) {
     spinning = true;
     winningSlot.y = -121;
-    scoreReducer.next(1);
+    sltMgr.scoreReducer.next(1);
     from(reels)
       .pipe(
         map(reel => ({ reel, intvl: sltMgr.getRandomInterval(reel.idx) })),
-        mergeMap(({ reel, intvl }) => interval(1).pipe(
-          take(Math.floor(intvl / 5)),
-          tap((spin) => {
-            reel.y = sltMgr.getTopPosition(reel.y);
-            if (Math.floor(intvl / 5) - spin === 1) {
-              reel.y = sltMgr.getTopPosition(reel.y, true);
-            }
-          }),
-        )),
+        mergeMap(({ reel, intvl }) => sltMgr.spinReel(intvl, reel)),
       )
       .subscribe(() => {},
         err => console.log('Error', err),
@@ -270,21 +193,21 @@ button.on('pointerdown', () => {
   }
 });
 
-scoreReducer
+sltMgr.scoreReducer
   .pipe(switchMap(decr => interval(100).pipe(take(decr))))
   .subscribe(() => {
     startScore -= 1;
     scoreBoard.text = startScore;
   });
 
-scoreIncrementer
+sltMgr.scoreIncrementer
   .pipe(switchMap(incr => interval(1).pipe(take(incr))))
   .subscribe(() => {
     startScore += 1;
     scoreBoard.text = startScore;
   });
 
-winSlotDisplayer
+sltMgr.winSlotDisplayer
   .pipe(
     /* eslint no-nested-ternary: "off" */
     map(slot => (slot === '' ? 0 : slot === 'top' ? 250 : slot === 'middle' ? 450 : 650)),
