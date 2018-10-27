@@ -65,6 +65,7 @@ export default class slotManager {
     this.scoreReducer = new BehaviorSubject(0);
     this.scoreIncrementer = new BehaviorSubject(0);
     this.winSlotDisplayer = new BehaviorSubject('');
+    this.payLineFinder = new BehaviorSubject(-1);
     this.getPayline = () => from(paylineInfo);
   }
 
@@ -175,6 +176,7 @@ export default class slotManager {
       && rowTopMax >= rowMiddleMax
       && rowTopMax >= rowBottomMax
     ) {
+      this.payLineFinder.next(rowTopWinnings.find(t => t.score === rowTopMax).paylinePos);
       this.scoreIncrementer.next(rowTopMax);
       this.winSlotDisplayer.next('top');
       return;
@@ -185,6 +187,7 @@ export default class slotManager {
       && rowMiddleMax > rowTopMax
       && rowMiddleMax >= rowBottomMax
     ) {
+      this.payLineFinder.next(rowMiddleWinnings.find(t => t.score === rowMiddleMax).paylinePos);
       this.scoreIncrementer.next(rowMiddleMax);
       this.winSlotDisplayer.next('middle');
       return;
@@ -195,6 +198,7 @@ export default class slotManager {
       && rowBottomMax > rowTopMax
       && rowBottomMax > rowMiddleMax
     ) {
+      this.payLineFinder.next(rowBottomWinnings.find(t => t.score === rowBottomMax).paylinePos);
       this.scoreIncrementer.next(rowBottomMax);
       this.winSlotDisplayer.next('bottom');
     }

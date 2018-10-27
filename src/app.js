@@ -39,7 +39,7 @@ const { view } = app;
 
 const playContainer = new Container();
 const reels = [];
-const images = [[], [], []];
+const texts = [];
 
 playContainer.x = 0;
 playContainer.y = 0;
@@ -129,6 +129,7 @@ sltMgr.getPayline().subscribe((txt) => {
   textPayline.y = yPos;
   payGraphics.addChild(textPayline);
   yPos += 38;
+  texts.push(textPayline);
 });
 
 sltMgr.getSlotDimensions()
@@ -169,7 +170,6 @@ sltMgr.getSlotDimensions()
         img.name = name;
         img.slotId = slotId;
         reelContainer.addChild(img);
-        images[idx].push(img);
       }),
       map(({
         img,
@@ -248,3 +248,14 @@ sltMgr.winSlotDisplayer
   .subscribe(() => {
     winningSlot.y += 1;
   });
+
+sltMgr.payLineFinder.pipe(
+  filter(pos => pos >= 0),
+  map(pos => texts[pos]),
+  switchMap(txt => interval(100).pipe(
+    take(10),
+    map(flick => ({ txt, flick })),
+  )),
+).subscribe(({ txt, flick }) => {
+  txt.alpha = (flick % 2) === 0 ? 0 : 1;
+});
