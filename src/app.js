@@ -26,6 +26,7 @@ import {
   combineAll,
   take,
   filter,
+  concatMap,
 } from 'rxjs/operators';
 
 import '../assets/style.css';
@@ -49,6 +50,7 @@ const { view } = app;
 const playContainer = new Container();
 const reels = [];
 const images = [[], [], []];
+let spinCounter = -1;
 
 playContainer.x = 0;
 playContainer.y = 0;
@@ -108,6 +110,7 @@ button.x = 50;
 button.y = 200;
 
 controlContainer.addChild(button);
+
 sltMgr.getSlotDimensions()
   .pipe(
     map(attr => ({ reelContainer: new Container(), ...attr })),
@@ -152,6 +155,9 @@ sltMgr.getSlotDimensions()
         img,
       }) => of(img)),
       combineAll(),
+      tap(() => {
+        reelContainer.idx = idx;
+      }),
       map(() => reelContainer),
     )),
   )
@@ -160,13 +166,6 @@ sltMgr.getSlotDimensions()
     playContainer.addChild(reelContainer);
   });
 
-const randomBetween = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-const betweens = [
-  { min: 1600, max: 2800 },
-  { min: 3200, max: 4800 },
-  { min: 5000, max: 6500 },
-];
-let spinCounter = -1;
 let spinning = false;
 
 const calculate = () => {
@@ -252,34 +251,13 @@ button.on('pointerdown', () => {
     scoreReducer.next(1);
     from(reels)
       .pipe(
-        map(reel => ({ reel, btw: betweens[++spinCounter] })),
-        map(({ reel, btw }) => ({
-          reel,
-          intvl: randomBetween(btw.min, btw.max),
-        })),
+        map(reel => ({ reel, intvl: sltMgr.getRandomInterval(reel.idx) })),
         mergeMap(({ reel, intvl }) => interval(1).pipe(
           take(Math.floor(intvl / 5)),
           tap((spin) => {
-            if (reel.y < -1000) {
-              reel.y = 410;
-            } else {
-              reel.y -= 10;
-            }
-
+            reel.y = sltMgr.getTopPosition(reel.y);
             if (Math.floor(intvl / 5) - spin === 1) {
-              const y = -1 * reel.y;
-              const lessers = images[0].filter(img => img.y <= y);
-              const greater = images[0].find(img => img.y >= y);
-              if (lessers && lessers.length > 0) {
-                const less = [...lessers].pop();
-                if (y - less.y < greater.y - y) {
-                  reel.y = -1 * (less.y - 10);
-                } else {
-                  reel.y = -1 * (greater.y - 10);
-                }
-              } else {
-                reel.y = 0;
-              }
+              reel.y = sltMgr.getTopPosition(reel.y, true);
             }
           }),
         )),
