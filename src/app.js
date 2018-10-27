@@ -5,6 +5,16 @@ import bar3x from './../assets/3xBAR.png';
 import num7 from './../assets/7.png';
 import bar from './../assets/BAR.png';
 import cherry from './../assets/Cherry.png';
+import {
+  SLOT_BAR,
+  SLOT_BAR2,
+  SLOT_BAR3,
+  SLOT_CHERRY,
+  SLOT_NUMBER_7,
+  winningCombinations
+} from './combinations';
+
+const HasFlag = (combined, flag) => (combined | flag) == combined;
 
 import {
   Application,
@@ -37,7 +47,13 @@ const { view } = app;
 const playContainer = new Container();
 let reels = [];
 const images = [[], [], []];
-const slotImages = ['bar3x', 'bar', 'bar2x', 'num7', 'cherry'];
+const slotImages = [
+  { text: 'bar3x', value: SLOT_BAR3 },
+  { text: 'bar', value: SLOT_BAR },
+  { text: 'bar2x', value: SLOT_BAR2 },
+  { text: 'num7', value: SLOT_NUMBER_7 },
+  { text: 'cherry', value: SLOT_CHERRY }
+];
 
 playContainer.x = 0;
 playContainer.y = 0;
@@ -123,7 +139,8 @@ from([0, 1, 2])
         tap(img => {
           img.x = 10;
           img.y = runner * 200 + 10;
-          img.name = slotImages[runner % 5];
+          img.name = slotImages[runner % 5].text;
+          img.slotId = slotImages[runner % 5].value;
           reelContainer.addChild(img);
           images[idx].push(img);
           runner++;
@@ -238,7 +255,7 @@ const calculate = () => {
         from(images[idx]).pipe(
           filter(img => img.y >= topY),
           take(3),
-          map(img => of(img.name)),
+          map(img => of({ name: img.name, slotId: img.slotId })),
           combineAll()
         )
       ),
@@ -248,255 +265,51 @@ const calculate = () => {
     .subscribe(scores => {
       spinning = false;
       spinCounter = -1;
+      const rowTopWinnings = winningCombinations
+        .find(x => x.slotPosition == 0)
+        .winnings.filter(x =>
+          HasFlag(
+            x.combination,
+            scores[0][0].slotId | scores[1][0].slotId | scores[2][0].slotId
+          )
+        );
 
-      // 3 cherry on bottom
-      if (
-        scores[0][2] == 'cherry' &&
-        scores[1][2] == 'cherry' &&
-        scores[2][2] == 'cherry'
-      ) {
-        console.log('3 cherry on bottom - 4000');
-        scoreIncrementer.next(4000);
-        winSlotDisplayer.next('bottom');
-        return;
-      }
+      const rowMiddleWinnings = winningCombinations
+        .find(x => x.slotPosition == 1)
+        .winnings.filter(x =>
+          HasFlag(
+            x.combination,
+            scores[0][1].slotId | scores[1][1].slotId | scores[2][1].slotId
+          )
+        );
 
-      // 3 cherry on top
-      if (
-        scores[0][0] == 'cherry' &&
-        scores[1][0] == 'cherry' &&
-        scores[2][0] == 'cherry'
-      ) {
-        console.log('3 cherry on top - 2000');
-        scoreIncrementer.next(2000);
+      const rowBottomWinnings = winningCombinations
+        .find(x => x.slotPosition == 2)
+        .winnings.filter(x =>
+          HasFlag(
+            x.combination,
+            scores[0][2].slotId | scores[1][2].slotId | scores[2][2].slotId
+          )
+        );
+
+      const rowTopMax = Math.max(...rowTopWinnings.map(w => w.score), 0);
+      const rowMiddleMax = Math.max(...rowMiddleWinnings.map(w => w.score), 0);
+      const rowBottomMax = Math.max(...rowBottomWinnings.map(w => w.score), 0);
+
+      if (rowTopMax > 0 && rowTopMax >= rowMiddleMax && rowTopMax >= rowBottomMax) {
+        scoreIncrementer.next(rowTopMax);
         winSlotDisplayer.next('top');
         return;
       }
 
-      // 3 cherry on middle
-      if (
-        scores[0][1] == 'cherry' &&
-        scores[1][1] == 'cherry' &&
-        scores[2][1] == 'cherry'
-      ) {
-        console.log('3 cherry on middle - 1000');
-        scoreIncrementer.next(1000);
+      if (rowMiddleMax > 0 && rowMiddleMax > rowTopMax && rowMiddleMax >= rowBottomMax) {
+        scoreIncrementer.next(rowMiddleMax);
         winSlotDisplayer.next('middle');
         return;
       }
 
-      // 3 7 in top
-      if (
-        scores[0][0] == 'num7' &&
-        scores[1][0] == 'num7' &&
-        scores[2][0] == 'num7'
-      ) {
-        console.log('3 7 on top - 150');
-        scoreIncrementer.next(150);
-        winSlotDisplayer.next('top');
-        return;
-      }
-
-      // 3 7 in middle
-      if (
-        scores[0][1] == 'num7' &&
-        scores[1][1] == 'num7' &&
-        scores[2][1] == 'num7'
-      ) {
-        console.log('3 7 on middle - 150');
-        scoreIncrementer.next(150);
-        winSlotDisplayer.next('middle');
-        return;
-      }
-
-      // 3 7 in bottom
-      if (
-        scores[0][2] == 'num7' &&
-        scores[1][2] == 'num7' &&
-        scores[2][2] == 'num7'
-      ) {
-        console.log('3 7 on bottom - 150');
-        scoreIncrementer.next(150);
-        winSlotDisplayer.next('bottom');
-        return;
-      }
-
-      // 3 num 7 and cherry on top
-      if (
-        (scores[0][0] == 'num7' || scores[0][0] == 'cherry') &&
-        (scores[1][0] == 'num7' || scores[1][0] == 'cherry') &&
-        (scores[2][0] == 'num7' || scores[2][0] == 'cherry')
-      ) {
-        console.log('3 7 or cherry on top - 75');
-        scoreIncrementer.next(75);
-        winSlotDisplayer.next('top');
-        return;
-      }
-
-      // 3 num 7 and cherry on middle
-      if (
-        (scores[0][1] == 'num7' || scores[0][1] == 'cherry') &&
-        (scores[1][1] == 'num7' || scores[1][1] == 'cherry') &&
-        (scores[2][1] == 'num7' || scores[2][1] == 'cherry')
-      ) {
-        console.log('3 7 or cherry on middle - 75');
-        scoreIncrementer.next(75);
-        winSlotDisplayer.next('middle');
-        return;
-      }
-
-      // 3 num 7 and cherry on bottom
-      if (
-        (scores[0][2] == 'num7' || scores[0][2] == 'cherry') &&
-        (scores[1][2] == 'num7' || scores[1][2] == 'cherry') &&
-        (scores[2][2] == 'num7' || scores[2][2] == 'cherry')
-      ) {
-        console.log('3 7 or cherry on bottom - 75');
-        scoreIncrementer.next(75);
-        winSlotDisplayer.next('bottom');
-        return;
-      }
-
-      // 3 bar3x on top
-      if (
-        scores[0][0] == 'bar3x' &&
-        scores[1][0] == 'bar3x' &&
-        scores[2][0] == 'bar3x'
-      ) {
-        console.log('3 bar3x on top - 50');
-        scoreIncrementer.next(50);
-        winSlotDisplayer.next('top');
-        return;
-      }
-
-      // 3 bar3x on middle
-      if (
-        scores[0][1] == 'bar3x' &&
-        scores[1][1] == 'bar3x' &&
-        scores[2][1] == 'bar3x'
-      ) {
-        console.log('3 bar3x on middle - 50');
-        scoreIncrementer.next(50);
-        winSlotDisplayer.next('middle');
-        return;
-      }
-
-      // 3 bar3x on bottom
-      if (
-        scores[0][2] == 'bar3x' &&
-        scores[1][2] == 'bar3x' &&
-        scores[2][2] == 'bar3x'
-      ) {
-        console.log('3 bar3x on bottom - 50');
-        scoreIncrementer.next(50);
-        winSlotDisplayer.next('bottom');
-        return;
-      }
-
-      // 3 bar2x on top
-      if (
-        scores[0][0] == 'bar2x' &&
-        scores[1][0] == 'bar2x' &&
-        scores[2][0] == 'bar2x'
-      ) {
-        console.log('3 bar2x on top - 20');
-        scoreIncrementer.next(20);
-        winSlotDisplayer.next('top');
-        return;
-      }
-
-      // 3 bar2x on middle
-      if (
-        scores[0][1] == 'bar2x' &&
-        scores[1][1] == 'bar2x' &&
-        scores[2][1] == 'bar2x'
-      ) {
-        console.log('3 bar2x on middle - 20');
-        scoreIncrementer.next(20);
-        winSlotDisplayer.next('middle');
-        return;
-      }
-
-      // 3 bar2x on bottom
-      if (
-        scores[0][2] == 'bar2x' &&
-        scores[1][2] == 'bar2x' &&
-        scores[2][2] == 'bar2x'
-      ) {
-        console.log('3 bar2x on bottom - 20');
-        scoreIncrementer.next(20);
-        winSlotDisplayer.next('bottom');
-        return;
-      }
-
-      // 3 bar on top
-      if (
-        scores[0][0] == 'bar' &&
-        scores[1][0] == 'bar' &&
-        scores[2][0] == 'bar'
-      ) {
-        console.log('3 bar on top - 10');
-        scoreIncrementer.next(10);
-        winSlotDisplayer.next('top');
-        return;
-      }
-
-      // 3 bar on middle
-      if (
-        scores[0][1] == 'bar' &&
-        scores[1][1] == 'bar' &&
-        scores[2][1] == 'bar'
-      ) {
-        console.log('3 bar on middle - 10');
-        scoreIncrementer.next(10);
-        winSlotDisplayer.next('middle');
-        return;
-      }
-
-      // 3 bar on bottom
-      if (
-        scores[0][2] == 'bar' &&
-        scores[1][2] == 'bar' &&
-        scores[2][2] == 'bar'
-      ) {
-        console.log('3 bar on middle - 10');
-        scoreIncrementer.next(10);
-        winSlotDisplayer.next('bottom');
-        return;
-      }
-
-      // 3 bar on top
-      if (
-        scores[0][0].startsWith('bar') &&
-        scores[1][0].startsWith('bar') &&
-        scores[2][0].startsWith('bar')
-      ) {
-        console.log('3 any bar on top - 5');
-        scoreIncrementer.next(5);
-        winSlotDisplayer.next('top');
-        return;
-      }
-
-      // 3 bar on middle
-      if (
-        scores[0][1].startsWith('bar') &&
-        scores[1][1].startsWith('bar') &&
-        scores[2][1].startsWith('bar')
-      ) {
-        console.log('3 any bar on middle - 5');
-        scoreIncrementer.next(5);
-        winSlotDisplayer.next('middle');
-        return;
-      }
-
-      // 3 bar on bottom
-      if (
-        scores[0][2].startsWith('bar') &&
-        scores[1][2].startsWith('bar') &&
-        scores[2][2].startsWith('bar')
-      ) {
-        console.log('3 any bar on bottom - 5');
-        scoreIncrementer.next(5);
+      if (rowBottomMax > 0 && rowBottomMax > rowTopMax && rowBottomMax > rowMiddleMax) {
+        scoreIncrementer.next(rowMiddleMax);
         winSlotDisplayer.next('bottom');
         return;
       }
