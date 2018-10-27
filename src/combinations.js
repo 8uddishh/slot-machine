@@ -144,3 +144,15 @@ export const winningCombinations = [
 ];
 
 export const HasFlag = (combined, flag) => (combined | flag) === combined;
+
+export const paylineInfo = [
+  '3 CHERRY symbols on top line 2000',
+  '3 CHERRY symbols on center line 1000',
+  '3 CHERRY symbols on bottom line 4000',
+  '3 7 symbols on any line 150',
+  'Any combination of CHERRY and 7 on any line 75',
+  '3 3xBAR symbols on any line 50',
+  '3 2xBAR symbols on any line 20',
+  '3 BAR symbols on any line 10',
+  'Combination of any BAR symbols on any line 5',
+];

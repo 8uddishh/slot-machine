@@ -24,6 +24,7 @@ import {
   SLOT_NUMBER_7,
   winningCombinations,
   HasFlag,
+  paylineInfo,
 } from './combinations';
 
 import bar2x from '../assets/2xBAR.png';
@@ -64,6 +65,7 @@ export default class slotManager {
     this.scoreReducer = new BehaviorSubject(0);
     this.scoreIncrementer = new BehaviorSubject(0);
     this.winSlotDisplayer = new BehaviorSubject('');
+    this.getPayline = () => from(paylineInfo);
   }
 
   getSlotDimensions() {

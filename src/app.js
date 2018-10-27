@@ -87,6 +87,23 @@ const style = new TextStyle({
   wordWrapWidth: 440,
 });
 
+const stylePayline = new TextStyle({
+  fontFamily: 'Arial',
+  fontSize: 12,
+  fontStyle: 'italic',
+  fontWeight: 'bold',
+  fill: ['#ffffff', '#00ff99'], // gradient
+  stroke: '#4a1850',
+  strokeThickness: 5,
+  dropShadow: true,
+  dropShadowColor: '#000000',
+  dropShadowBlur: 4,
+  dropShadowAngle: Math.PI / 6,
+  dropShadowDistance: 6,
+  wordWrap: true,
+  wordWrapWidth: 230,
+});
+
 const scoreBoard = new Text(startScore, style);
 scoreBoard.x = 575;
 scoreBoard.y = 30;
@@ -96,9 +113,23 @@ const button = Sprite.fromImage(buttonSp);
 button.interactive = true;
 button.buttonMode = true;
 button.x = 50;
-button.y = 200;
+button.y = 450;
 
 controlContainer.addChild(button);
+
+const payGraphics = new Graphics();
+payGraphics.beginFill(0, 1);
+payGraphics.drawRect(500, 100, 230, 320);
+playContainer.addChild(payGraphics);
+
+let yPos = 90;
+sltMgr.getPayline().subscribe((txt) => {
+  const textPayline = new Text(txt, stylePayline);
+  textPayline.x = 500;
+  textPayline.y = yPos;
+  payGraphics.addChild(textPayline);
+  yPos += 38;
+});
 
 sltMgr.getSlotDimensions()
   .pipe(
