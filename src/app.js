@@ -309,7 +309,7 @@ const calculate = () => {
       }
 
       if (rowBottomMax > 0 && rowBottomMax > rowTopMax && rowBottomMax > rowMiddleMax) {
-        scoreIncrementer.next(rowMiddleMax);
+        scoreIncrementer.next(rowBottomMax);
         winSlotDisplayer.next('bottom');
         return;
       }
