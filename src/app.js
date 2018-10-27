@@ -1,7 +1,7 @@
 /* eslint no-bitwise: ["error", { "allow": ["|"] }] */
 /* eslint no-param-reassign: ["error", { "props": false }] */
 /* eslint no-plusplus: [0] */
-
+import 'bootstrap/dist/css/bootstrap.css';
 import {
   Application,
   Sprite,
@@ -130,6 +130,54 @@ sltMgr.getPayline().subscribe((txt) => {
   payGraphics.addChild(textPayline);
   yPos += 38;
   texts.push(textPayline);
+});
+
+const slotImageOptions = from(sltMgr.slotImages).pipe(
+  map(({ text, value }) => {
+    const option = document.createElement('option');
+    option.text = text;
+    option.value = value;
+    return option;
+  }),
+);
+
+slotImageOptions.subscribe((opt) => {
+  const left = document.getElementById('reelLeftSymbol');
+  left.add(opt);
+});
+
+slotImageOptions.subscribe((opt) => {
+  const center = document.getElementById('reelCenterSymbol');
+  center.add(opt);
+});
+
+slotImageOptions.subscribe((opt) => {
+  const right = document.getElementById('reelRightSymbol');
+  right.add(opt);
+});
+
+const slotPositionOptions = from(['top', 'center', 'bottom']).pipe(
+  map((position) => {
+    const option = document.createElement('option');
+    option.text = position;
+    option.value = position;
+    return option;
+  }),
+);
+
+slotPositionOptions.subscribe((opt) => {
+  const left = document.getElementById('reelLeftPosition');
+  left.add(opt);
+});
+
+slotPositionOptions.subscribe((opt) => {
+  const center = document.getElementById('reelCenterPosition');
+  center.add(opt);
+});
+
+slotPositionOptions.subscribe((opt) => {
+  const right = document.getElementById('reelRightPosition');
+  right.add(opt);
 });
 
 sltMgr.getSlotDimensions()

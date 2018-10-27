@@ -1,15 +1,72 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>{{htmlWebpackPlugin.options.title}}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
-<body>
-    <h1>Slotter</h1>
-    <div id="playground">
 
+<body>
+    <div class="container">
+        <h1>Slotter</h1>
+        <div id="playground">
+
+        </div>
+
+        <div class="alert alert-danger" role="alert">
+            <div class="row">
+                <div class="col-sm">
+                    <h3>TOMARE :: This is a debug area</h3>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm">
+                    Reel Left
+                </div>
+                <div class="col-sm">
+                    <select class="form-control" id="reelLeftSymbol">
+                    </select>
+                </div>
+                <div class="col-sm">
+                    <select class="form-control" id="reelLeftPosition">
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm">
+                    Reel Middle
+                </div>
+                <div class="col-sm">
+                    <select class="form-control" id="reelCenterSymbol">
+                    </select>
+                </div>
+                <div class="col-sm">
+                    <select class="form-control" id="reelCenterPosition">
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm">
+                    Reel Right
+                </div>
+                <div class="col-sm">
+                    <select class="form-control" id="reelRightSymbol">
+                    </select>
+                </div>
+                <div class="col-sm">
+                    <select class="form-control" id="reelRightPosition">
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm">
+                    <button type="button" class="btn btn-danger float-right">Debug</button>
+                </div>
+            </div>
+        </div>
     </div>
 </body>
+
 </html>

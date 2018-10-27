@@ -1,3 +1,11 @@
 h1 {
     color: teal;
 }
+
+.container {
+    max-width: 780px;
+}
+
+.row {
+    padding-bottom: 10px;
+}

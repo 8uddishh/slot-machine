@@ -13,36 +13,36 @@ module.exports = {
           test: /[\\/]node_modules[\\/](pixi.js)[\\/]/,
           name: 'vendor',
           chunks: 'all',
-        }
-      }
-    }
+        },
+      },
+    },
   },
   devtool: 'inline-source-map',
   devServer: {
-    contentBase: './dist'
+    contentBase: './dist',
   },
   plugins: [
     new CleanWebpackPlugin(['dist']),
     new HtmlWebpackPlugin({
       title: 'Slotter',
-      template: 'templates/index.hbs'
-    })
+      template: 'templates/index.hbs',
+    }),
   ],
   output: {
     filename: '[name].bundle.js',
-    path: path.resolve(__dirname, 'dist')
+    path: path.resolve(__dirname, 'dist'),
   },
   module: {
     rules: [
       {
         test: /\.css$/,
-        use: ['style-loader', 'css-loader']
+        use: ['style-loader', 'css-loader'],
       },
       {
         test: /\.(png|svg|jpg|gif)$/,
-        use: ['file-loader']
+        use: ['file-loader'],
       },
-      { test: /\.hbs$/, loader: 'handlebars-loader' }
-    ]
-  }
+      { test: /\.hbs$/, loader: 'handlebars-loader' },
+    ],
+  },
 };
