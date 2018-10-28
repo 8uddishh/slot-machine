@@ -142,6 +142,31 @@ export default class slotManager {
           reel.y = this.getTopPosition(reel.y, true);
         }
       }),
+      map(() => reel),
+    );
+  }
+
+  spinReelDebug(intvl, reel, debugPositions) {
+    let setOnce = true;
+    return interval(1).pipe(
+      take(Math.floor(intvl / 5)),
+      tap((spin) => {
+        if (((spin * 10) < (intvl))
+        || (Math.abs(reel.y) !== debugPositions[reel.idx].above
+            && Math.abs(reel.y) !== debugPositions[reel.idx].below)) {
+          reel.y = this.getTopPosition(reel.y);
+          if (Math.floor(intvl / 5) - spin === 1) {
+            reel.y = this.getTopPosition(reel.y, true);
+          }
+        } else {
+          // hack but works
+          if (setOnce) {
+            reel.y = -1 * (debugPositions[reel.idx].above);
+          }
+          setOnce = false;
+        }
+      }),
+      map(() => reel),
     );
   }
 

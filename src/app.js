@@ -122,6 +122,8 @@ payGraphics.beginFill(0, 1);
 payGraphics.drawRect(500, 100, 230, 320);
 playContainer.addChild(payGraphics);
 
+const debugButton = document.getElementById('debugBtn');
+
 let yPos = 90;
 sltMgr.getPayline().subscribe((txt) => {
   const textPayline = new Text(txt, stylePayline);
@@ -271,6 +273,81 @@ button.on('pointerdown', () => {
         });
   }
 });
+
+const getDebugPositions = () => {
+  const leftSymbol = document.getElementById('reelLeftSymbol').value;
+  const middleSymbol = document.getElementById('reelCenterSymbol').value;
+  const rightSymbol = document.getElementById('reelRightSymbol').value;
+
+  const leftPos = document.getElementById('reelLeftPosition').value;
+  const middlePos = document.getElementById('reelCenterPosition').value;
+  const rightPos = document.getElementById('reelRightPosition').value;
+
+  const leftImages = sltMgr.imagePositions[0].filter(x => x.slotId === parseInt(leftSymbol, 10));
+  const middleImages = sltMgr.imagePositions[1].filter(x => x.slotId === parseInt(middleSymbol, 10));
+  const rigtImages = sltMgr.imagePositions[2].filter(x => x.slotId === parseInt(rightSymbol, 10));
+
+  const yPositions = [];
+
+  if (leftPos === 'top') {
+    yPositions.push({ above: leftImages[0].y, below: leftImages[1].y });
+  }
+
+  if (leftPos === 'center') {
+    yPositions.push({ above: leftImages[0].y - 200, below: leftImages[1].y - 200 });
+  }
+
+  if (leftPos === 'bottom') {
+    yPositions.push({ above: leftImages[0].y - 400, below: leftImages[1].y - 400 });
+  }
+
+  if (middlePos === 'top') {
+    yPositions.push({ above: middleImages[0].y, below: middleImages[1].y });
+  }
+
+  if (middlePos === 'center') {
+    yPositions.push({ above: middleImages[0].y - 200, below: middleImages[1].y - 200 });
+  }
+
+  if (middlePos === 'bottom') {
+    yPositions.push({ above: middleImages[0].y - 400, below: middleImages[1].y - 400 });
+  }
+
+  if (rightPos === 'top') {
+    yPositions.push({ above: rigtImages[0].y, below: rigtImages[1].y });
+  }
+
+  if (rightPos === 'center') {
+    yPositions.push({ above: rigtImages[0].y - 200, below: rigtImages[1].y - 200 });
+  }
+
+  if (rightPos === 'bottom') {
+    yPositions.push({ above: rigtImages[0].y - 400, below: rigtImages[1].y - 400 });
+  }
+  return yPositions;
+};
+
+debugButton.onclick = () => {
+  if (!spinning) {
+    spinning = true;
+    winningSlot.y = -121;
+    sltMgr.scoreReducer.next(1);
+    const yPositions = getDebugPositions();
+    from(reels)
+      .pipe(
+        map(reel => ({ reel, intvl: Math.floor(sltMgr.getRandomInterval(reel.idx) / 2) + 3000 })),
+        mergeMap(({ reel, intvl }) => sltMgr.spinReelDebug(intvl, reel, yPositions)),
+      )
+      .subscribe(() => {},
+        err => console.log('Error', err),
+        () => {
+          reels[0].y += 10;
+          reels[1].y += 10;
+          reels[2].y += 10;
+          calculate();
+        });
+  }
+};
 
 sltMgr.scoreReducer
   .pipe(switchMap(decr => interval(100).pipe(take(decr))))
